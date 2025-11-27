@@ -11,23 +11,27 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout code
       - name: Checkout code
         uses: actions/checkout@v3
         with:
           persist-credentials: true
 
+      # 2. Set up JDK
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
 
+      # 3. Bump patch version
       - name: Bump patch version
         run: |
           mvn build-helper:parse-version versions:set \
             -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.nextIncrementalVersion} \
             versions:commit --file myapp/pom.xml
 
+      # 4. Commit updated pom.xml back to repo
       - name: Commit version bump
         run: |
           git config --global user.name "github-actions[bot]"
@@ -36,21 +40,31 @@ jobs:
           git commit -m "chore: bump patch version [skip ci]" || echo "No changes to commit"
           git push
 
+      # 5. Build JAR with Maven
       - name: Build with Maven
         run: mvn -B clean package --file myapp/pom.xml
 
+      # 6. Upload JAR as artifact
       - name: Upload JAR artifact
         uses: actions/upload-artifact@v4
         with:
           name: myapp-jar
           path: myapp/target/*.jar
 
+      # 7. Extract version from pom.xml
       - name: Extract version from pom.xml
         id: version
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout --file myapp/pom.xml)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      # 8. Build Docker image tagged with JAR version
       - name: Build Docker image
         run: |
-          docker build -t myapp:${{ steps.version.outputs.version }} -f docker/Dockerfile .
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/myapp:${{ steps.version.outputs.version }} -f docker/Dockerfile .
+
+      # 9. Push Docker image to Docker Hub
+      - name: Push Docker image
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker push ${{ secrets.DOCKER_USERNAME }}/myapp:${{ steps.version.outputs.version }}
