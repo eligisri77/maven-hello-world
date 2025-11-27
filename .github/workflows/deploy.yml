@@ -2,9 +2,12 @@ name: Deploy to Kubernetes
 
 on:
   workflow_run:
-    workflows: ["Maven Build & Docker"]   # 👈 must match build.yml name
+    workflows: ["Maven Build & Docker"]
     types:
       - completed
+
+permissions:
+  contents: write   # 👈 allows pushing changes to the repo
 
 jobs:
   deploy:
@@ -12,34 +15,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout repo (to get helm/myapp folder)
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # 2. Set up kubectl (requires KUBECONFIG_DATA secret)
       - name: Set up kubectl
         run: |
           echo "${{ secrets.KUBECONFIG_DATA }}" | base64 --decode > kubeconfig
           export KUBECONFIG=$PWD/kubeconfig
 
-      # 3. Extract version from pom.xml
-      - name: Extract version
+      - name: Extract version from pom.xml
         id: version
         run: |
           VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout --file myapp/pom.xml)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
-      # 4. Update Chart.yaml appVersion
       - name: Update Chart.yaml appVersion
         run: |
-          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" helm/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" helm/myapp/Chart.yaml
 
-      # 5. Update values.yaml image.tag
       - name: Update values.yaml image.tag
         run: |
-          sed -i "s/^  tag:.*/  tag: \"${{ steps.version.outputs.version }}\"/" helm/values.yaml
+          sed -i "s/^  tag:.*/  tag: \"${{ steps.version.outputs.version }}\"/" helm/myapp/values.yaml
 
-      # 6. Deploy with Helm
+      - name: Commit updated Helm chart version
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add helm/myapp/Chart.yaml helm/myapp/values.yaml
+          git commit -m "Update Helm chart version to ${{ steps.version.outputs.version }}"
+          git push
+
       - name: Helm upgrade/install
         run: |
           helm upgrade --install myapp ./helm/myapp \
@@ -47,7 +52,5 @@ jobs:
             --set image.tag=${{ steps.version.outputs.version }} \
             --set image.pullPolicy=Always
 
-      # 7. Verify rollout
       - name: Verify rollout
         run: |
-          kubectl rollout status deployment/myapp-myapp
