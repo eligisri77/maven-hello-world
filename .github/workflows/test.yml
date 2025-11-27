@@ -1,0 +1,39 @@
+name: Test Docker Image
+
+on:
+  workflow_run:
+    workflows: ["Maven Build & Docker"] 
+    types:
+      - completed
+
+jobs:
+  test:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code (optional if you need files)
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 2. Extract version from pom.xml
+      - name: Extract version from pom.xml
+        id: version
+        run: |
+          VERSION=$(mvn help:evaluate -Dexpression=project.version -q -DforceStdout --file myapp/pom.xml)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      # 3. Login to Docker Hub
+      - name: Docker Hub Login
+        run: |
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+      # 4. Pull the image from Docker Hub
+      - name: Pull Docker image
+        run: |
+          docker pull ${{ secrets.DOCKER_USERNAME }}/myapp:${{ steps.version.outputs.version }}
+
+      # 5. Run the container (basic smoke test)
+      - name: Run Docker container
+        run: |
+          docker run --rm ${{ secrets.DOCKER_USERNAME }}/myapp:${{ steps.version.outputs.version }}
