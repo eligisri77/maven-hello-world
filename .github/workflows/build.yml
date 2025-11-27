@@ -22,14 +22,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # 🔧 Step 1: Bump patch version
       - name: Bump patch version
         run: |
           mvn build-helper:parse-version versions:set \
             -DnewVersion=\${parsedVersion.majorVersion}.\${parsedVersion.minorVersion}.\${parsedVersion.nextIncrementalVersion} \
             versions:commit --file myapp/pom.xml
 
-      # 📝 Step 2: Commit updated pom.xml back to repo
       - name: Commit version bump
         run: |
           git config --global user.name "github-actions[bot]"
@@ -38,6 +36,11 @@ jobs:
           git commit -m "chore: bump patch version [skip ci]" || echo "No changes to commit"
           git push
 
-      # 🔨 Step 3: Build with Maven
       - name: Build with Maven
-        run: mvn -B package --file myapp/pom.xml
+        run: mvn -B clean package --file myapp/pom.xml
+
+      - name: Upload JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: myapp-jar
+          path: myapp/target/*.jar
