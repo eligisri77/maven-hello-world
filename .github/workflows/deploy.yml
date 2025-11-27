@@ -31,17 +31,17 @@ jobs:
 
       - name: Update Chart.yaml appVersion
         run: |
-          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" helm/myapp/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" helm/Chart.yaml
 
       - name: Update values.yaml image.tag
         run: |
-          sed -i "s/^  tag:.*/  tag: \"${{ steps.version.outputs.version }}\"/" helm/myapp/values.yaml
+          sed -i "s/^  tag:.*/  tag: \"${{ steps.version.outputs.version }}\"/" helm/values.yaml
 
       - name: Commit updated Helm chart version
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
-          git add helm/myapp/Chart.yaml helm/myapp/values.yaml
+          git add helm/Chart.yaml helm/values.yaml
           git commit -m "Update Helm chart version to ${{ steps.version.outputs.version }}"
           git push
 
