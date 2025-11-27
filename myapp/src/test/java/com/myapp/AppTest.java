@@ -18,3 +18,14 @@ public class AppTest
         assertTrue( true );
     }
 }
+
+@Test
+public void shouldPrintHelloWorld() {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    System.setOut(new PrintStream(out));
+
+    App.main(new String[]{});
+
+    assertTrue(out.toString().contains("Eli, Hello World!"));
+}
+
