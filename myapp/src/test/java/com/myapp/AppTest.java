@@ -2,30 +2,25 @@ package com.myapp;
 
 import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+
 import org.junit.Test;
 
-/**
- * Unit test for simple App.
- */
-public class AppTest 
-{
-    /**
-     * Rigorous Test :-)
-     */
+public class AppTest {
+
     @Test
-    public void shouldAnswerWithTrue()
-    {
-        assertTrue( true );
+    public void shouldPrintHelloWorld() {
+        // Capture System.out
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(out));
+
+        // Run the main method
+        App.main(new String[]{});
+
+        // Check the output contains the expected text
+        String output = out.toString().trim();
+        assertTrue("Output should contain 'Eli, Hello World!'", 
+                   output.contains("Eli, Hello World!"));
     }
 }
-
-@Test
-public void shouldPrintHelloWorld() {
-    ByteArrayOutputStream out = new ByteArrayOutputStream();
-    System.setOut(new PrintStream(out));
-
-    App.main(new String[]{});
-
-    assertTrue(out.toString().contains("Eli, Hello World!"));
-}
-
