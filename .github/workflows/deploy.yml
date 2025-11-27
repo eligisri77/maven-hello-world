@@ -32,12 +32,12 @@ jobs:
       # 4. Update Chart.yaml appVersion
       - name: Update Chart.yaml appVersion
         run: |
-          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" helm/myapp/Chart.yaml
+          sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.version }}\"/" helm/Chart.yaml
 
       # 5. Update values.yaml image.tag
       - name: Update values.yaml image.tag
         run: |
-          sed -i "s/^  tag:.*/  tag: \"${{ steps.version.outputs.version }}\"/" helm/myapp/values.yaml
+          sed -i "s/^  tag:.*/  tag: \"${{ steps.version.outputs.version }}\"/" helm/values.yaml
 
       # 6. Deploy with Helm
       - name: Helm upgrade/install
